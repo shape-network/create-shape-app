@@ -3,6 +3,7 @@ import { pathToFileURL } from 'node:url';
 import readline from 'node:readline/promises';
 import { parseArgs } from './cli/args.js';
 import { HELP_TEXT } from './cli/help.js';
+import { runPostScaffoldSetup, type PostScaffoldSetupOptions } from './scaffold/post-setup.js';
 import { materializeTemplateFromRelease, type MaterializedTemplate } from './template/materialize.js';
 import { copyTemplateToDirectory, prepareTargetDirectory } from './template/project.js';
 import { fetchTemplateRelease, type TemplateRelease } from './template/release.js';
@@ -22,6 +23,7 @@ interface CliRuntime {
   materializeTemplate: (release: TemplateRelease) => Promise<MaterializedTemplate>;
   prepareTargetDirectory: (targetDirectory: string) => Promise<void>;
   copyTemplateToDirectory: (templateRoot: string, targetDirectory: string) => Promise<void>;
+  runPostScaffoldSetup: (options: PostScaffoldSetupOptions) => Promise<void>;
 }
 
 const DEFAULT_PROJECT_NAME_PROMPT = 'Project name: ';
@@ -92,8 +94,17 @@ export async function runCLI(argv: string[], runtimeOverrides: Partial<CliRuntim
       await materializedTemplate.cleanup();
     }
 
+    await runtime.runPostScaffoldSetup({
+      targetDirectory,
+      projectName,
+      packageManager,
+      skipInstall: options.skipInstall,
+      skipGit: options.skipGit,
+    });
+
     runtime.print(`Scaffolded ${projectName} from builder-kit@${release.tag}.`);
-    runtime.print('Post-scaffold install and git setup will be added in Phase 4.');
+    runtime.print(`Dependencies: ${options.skipInstall ? 'skipped' : `installed via ${packageManager}`}`);
+    runtime.print(`Git setup: ${options.skipGit ? 'skipped' : 'initialized with initial commit'}`);
     return 0;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected error';
@@ -118,6 +129,7 @@ function createRuntime(overrides: Partial<CliRuntime>): CliRuntime {
     materializeTemplate: materializeTemplateFromRelease,
     prepareTargetDirectory,
     copyTemplateToDirectory,
+    runPostScaffoldSetup,
     ...overrides,
   };
 }

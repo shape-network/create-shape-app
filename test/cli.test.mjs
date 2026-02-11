@@ -26,6 +26,7 @@ function createRuntime(overrides = {}) {
     }),
     prepareTargetDirectory: async () => {},
     copyTemplateToDirectory: async () => {},
+    runPostScaffoldSetup: async () => {},
     ...overrides,
   };
 
