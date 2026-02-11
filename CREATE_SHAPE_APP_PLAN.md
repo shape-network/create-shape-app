@@ -33,7 +33,7 @@ Build and launch a dedicated `create-shape-app` CLI in its own repository that s
 - [x] **Phase 2 — Core Scaffolder (P0):** Implemented command flow with required flags: `--yes`, `--pm`, `--skip-install`, `--skip-git`, positional project name, interactive project-name prompt, and confirmation gating.
 - [x] **Phase 3 — Release-Tag Template Fetch (P0):** Implemented release resolution from GitHub Releases (`latest` or `--template-ref <tag>`), strict tag validation (semver tag-only; reject canary), tarball materialization, and safe template copy into target directory.
 - [x] **Phase 4 — Post-Scaffold Setup (P0/P1):** Applied project-name substitution (`package.json` name), `.env.example` -> `.env` defaults, dependency install via selected package manager, and optional git init + first commit.
-- [ ] **Phase 5 — Validation & CI (P1):** Add integration smoke tests that generate into temp dirs and verify install + key commands complete.
+- [x] **Phase 5 — Validation & CI (P1):** Added integration smoke test that scaffolds into temp dirs and verifies Bun install plus key generated-app commands (`type-check`, `lint`, `contracts:compile`) succeed; CI/release validation now runs on Bun.
 - [ ] **Phase 6 — Publishing & Rollout (P1/P2):** Configure package publishing and release workflow; publish under `create-shape-app`; update Builder Kit docs to point to CLI usage.
 
 ## Plan Sync Notes
@@ -43,7 +43,8 @@ Build and launch a dedicated `create-shape-app` CLI in its own repository that s
 - February 11, 2026: Standardized local development/validation workflow on Bun (no npm commands).
 - February 11, 2026: Completed Phase 3 release-tag template fetch/copy path in `src/template/*` and integrated into `runCLI`.
 - February 11, 2026: Completed Phase 4 post-scaffold setup in `src/scaffold/post-setup.ts` and wired it into `runCLI`.
-- Next implementation target: **Phase 5 — Validation & CI (P1)**.
+- February 11, 2026: Completed Phase 5 smoke validation in `test/integration-smoke.test.mjs` and switched GitHub workflows to Bun-based validation.
+- Next implementation target: **Phase 6 — Publishing & Rollout (P1/P2)**.
 
 ## Validation
 - `bun create shape-app my-app --yes --skip-install --skip-git`
