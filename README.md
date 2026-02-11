@@ -13,10 +13,10 @@ Phase 1 bootstrap is complete:
 ## Local Development
 
 ```bash
-npm install
-npm run lint
-npm run type-check
-npm run test
+bun install
+bun run lint
+bun run type-check
+bun run test
 ```
 
 ## Planned Command

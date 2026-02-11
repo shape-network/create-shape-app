@@ -19,6 +19,10 @@ export default [
         ...globals.node,
       },
     },
+    rules: {
+      'no-undef': 'off',
+      'no-unused-vars': 'off',
+    },
   },
   {
     files: ['**/*.mjs'],

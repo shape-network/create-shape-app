@@ -20,7 +20,7 @@ Build and launch a dedicated `create-shape-app` CLI in its own repository that s
   - Safe project creation (name/path validation, non-empty dir protection)
   - Reliable install and git initialization flow
 - P1:
-  - Polished DX (`npm/pnpm/yarn/bun create`, prompts + flags)
+  - Polished DX (`bun create` primary path, prompts + flags)
   - CI smoke coverage for generated apps
 - P2:
   - Release automation and versioning discipline
@@ -30,20 +30,21 @@ Build and launch a dedicated `create-shape-app` CLI in its own repository that s
 
 ## Action Items
 - [x] **Phase 1 — Repository Bootstrap (P0):** Completed in dedicated repo `shape-network/create-shape-app` with TypeScript CLI foundation (`bin`, `src`, tests, lint/typecheck, CI/release workflow scaffolding).
-- [ ] **Phase 2 — Core Scaffolder (P0):** Implement `create-shape-app` command flow with required flags: `--yes`, `--pm`, `--skip-install`, `--skip-git`, and positional project name.
-- [ ] **Phase 3 — Release-Tag Template Fetch (P0):** Implement template download/copy from `shape-network/builder-kit` latest release tag tarball; reject non-tag/canary sources.
+- [x] **Phase 2 — Core Scaffolder (P0):** Implemented command flow with required flags: `--yes`, `--pm`, `--skip-install`, `--skip-git`, positional project name, interactive project-name prompt, and confirmation gating.
+- [x] **Phase 3 — Release-Tag Template Fetch (P0):** Implemented release resolution from GitHub Releases (`latest` or `--template-ref <tag>`), strict tag validation (semver tag-only; reject canary), tarball materialization, and safe template copy into target directory.
 - [ ] **Phase 4 — Post-Scaffold Setup (P0/P1):** Apply project-name substitutions, env-file defaults, dependency install via selected package manager, optional git init + first commit.
 - [ ] **Phase 5 — Validation & CI (P1):** Add integration smoke tests that generate into temp dirs and verify install + key commands complete.
-- [ ] **Phase 6 — Publishing & Rollout (P1/P2):** Configure npm publishing and release workflow; publish under `create-shape-app`; update Builder Kit docs to point to CLI usage.
+- [ ] **Phase 6 — Publishing & Rollout (P1/P2):** Configure package publishing and release workflow; publish under `create-shape-app`; update Builder Kit docs to point to CLI usage.
 
 ## Plan Sync Notes
 - February 11, 2026: Created private repo `shape-network/create-shape-app` and pushed `main` with atomic commits (`20b440d`, `f8641ce`, `059a605`, `1bcf1b6`).
 - February 11, 2026: Moved local working copy out of monorepo to `/Users/wh/code/pattern-engine/create-shape-app`.
-- Next implementation target: **Phase 2 — Core Scaffolder (P0)**.
+- February 11, 2026: Completed Phase 2 core CLI flow in `src/index.ts` with interactive/non-interactive handling and added behavior tests in `test/cli.test.mjs`.
+- February 11, 2026: Standardized local development/validation workflow on Bun (no npm commands).
+- February 11, 2026: Completed Phase 3 release-tag template fetch/copy path in `src/template/*` and integrated into `runCLI`.
+- Next implementation target: **Phase 4 — Post-Scaffold Setup (P0/P1)**.
 
 ## Validation
-- `npm create shape-app@latest my-app -- --yes --skip-install --skip-git`
-- `pnpm create shape-app my-app -- --yes --skip-install --skip-git`
 - `bun create shape-app my-app --yes --skip-install --skip-git`
 - In generated app:
   - `bun install`

@@ -2,7 +2,10 @@ export const HELP_TEXT = `
 create-shape-app - Scaffold Shape Builder Kit apps from release tags
 
 Usage:
-  create-shape-app <project-name> [options]
+  create-shape-app [project-name] [options]
+
+Notes:
+  If project-name is omitted in an interactive terminal, you will be prompted.
 
 Options:
   -y, --yes                 Skip confirmation prompts
