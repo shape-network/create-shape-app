@@ -1,8 +1,26 @@
 {
   "name": "create-shape-app",
-  "version": "0.0.0-development",
+  "version": "0.1.0",
   "description": "Scaffold Shape Builder Kit projects from pinned release tags.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/shape-network/create-shape-app.git"
+  },
+  "bugs": {
+    "url": "https://github.com/shape-network/create-shape-app/issues"
+  },
+  "homepage": "https://github.com/shape-network/create-shape-app#readme",
+  "keywords": [
+    "cli",
+    "create",
+    "scaffold",
+    "shape",
+    "builder-kit"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "bin": {
     "create-shape-app": "./bin/create-shape-app.js"

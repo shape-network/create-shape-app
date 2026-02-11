@@ -4,11 +4,13 @@ CLI for scaffolding Shape apps from the Builder Kit template pinned to release t
 
 ## Status
 
-Phase 1 bootstrap is complete:
-- TypeScript CLI foundation (`bin`, `src`)
-- CLI argument parser with tests
-- lint/type-check/test/build scripts
-- release workflow scaffold
+Current release target: `v0.1.0`.
+
+Implemented:
+- Release-tag-only template sourcing from `shape-network/builder-kit`
+- Core scaffolding flow with prompts + flags
+- Post-scaffold setup (`package.json` name, `.env` defaults, install, optional git init/commit)
+- Smoke validation test and Bun-based CI/release checks
 
 ## Local Development
 
@@ -22,7 +24,29 @@ bun run test
 ## Planned Command
 
 ```bash
-create-shape-app <project-name> --yes --skip-install --skip-git
+bun create shape-app my-app --yes
 ```
 
-Core scaffolding behavior is implemented in later phases.
+## CLI Usage
+
+```bash
+create-shape-app [project-name] [options]
+```
+
+Options:
+- `-y, --yes`
+- `--pm <bun|npm|pnpm|yarn>`
+- `--skip-install`
+- `--skip-git`
+- `--template-ref <tag>`
+
+## Publish
+
+- Trigger: GitHub release publish event.
+- Guard: workflow checks release tag matches `package.json` version.
+- Publish target: npm package `create-shape-app`.
+
+## Builder Kit Rollout
+
+Builder Kit README quickstart update snippet is tracked in:
+- `/Users/wh/code/pattern-engine/create-shape-app/docs/builder-kit-quickstart.md`
