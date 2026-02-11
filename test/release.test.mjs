@@ -57,3 +57,57 @@ test('fetches explicit tag endpoint', async () => {
   assert.ok(calls[0].includes('/releases/tags/v2.1.0'));
   assert.equal(release.tag, 'v2.1.0');
 });
+
+test('retries on 429 and succeeds on subsequent attempt', async () => {
+  const calls = [];
+  const sleeps = [];
+  const fetchImpl = async (url) => {
+    calls.push(String(url));
+
+    if (calls.length === 1) {
+      return new Response('', {
+        status: 429,
+        headers: { 'retry-after': '0' },
+      });
+    }
+
+    return new Response(
+      JSON.stringify({
+        tag_name: 'v3.0.0',
+        tarball_url: 'https://example.com/release.tar.gz',
+      }),
+      { status: 200 },
+    );
+  };
+
+  const release = await fetchTemplateRelease({
+    fetchImpl,
+    sleepImpl: async (milliseconds) => {
+      sleeps.push(milliseconds);
+    },
+  });
+
+  assert.equal(calls.length, 2);
+  assert.equal(sleeps.length, 1);
+  assert.equal(sleeps[0], 0);
+  assert.equal(release.tag, 'v3.0.0');
+});
+
+test('fails after retry budget is exhausted', async () => {
+  let callCount = 0;
+  const fetchImpl = async () => {
+    callCount += 1;
+    return new Response('', { status: 502 });
+  };
+
+  await assert.rejects(
+    () =>
+      fetchTemplateRelease({
+        fetchImpl,
+        sleepImpl: async () => {},
+      }),
+    /Failed to resolve latest release: HTTP 502/,
+  );
+
+  assert.equal(callCount, 3);
+});

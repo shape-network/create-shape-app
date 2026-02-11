@@ -8,6 +8,7 @@ export interface FetchTemplateReleaseOptions {
   repo?: string;
   templateRef?: string;
   fetchImpl?: typeof fetch;
+  sleepImpl?: (milliseconds: number) => Promise<void>;
 }
 
 const DEFAULT_OWNER = 'shape-network';
@@ -31,6 +32,8 @@ export async function fetchTemplateRelease(options: FetchTemplateReleaseOptions 
   const repo = options.repo ?? DEFAULT_REPO;
   const templateRef = options.templateRef;
   const fetchImpl = options.fetchImpl ?? fetch;
+  const sleepImpl = options.sleepImpl ?? sleep;
+  const maxAttempts = 3;
 
   if (templateRef) {
     assertTagIsSupported(templateRef);
@@ -40,12 +43,29 @@ export async function fetchTemplateRelease(options: FetchTemplateReleaseOptions 
     ? `https://api.github.com/repos/${owner}/${repo}/releases/tags/${encodeURIComponent(templateRef)}`
     : `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
 
-  const response = await fetchImpl(endpoint, {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      'User-Agent': 'create-shape-app',
-    },
-  });
+  let response: Response | undefined;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    response = await fetchImpl(endpoint, {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        'User-Agent': 'create-shape-app',
+      },
+    });
+
+    if (response.ok) {
+      break;
+    }
+
+    if (!isRetryableStatus(response.status) || attempt === maxAttempts) {
+      break;
+    }
+
+    await sleepImpl(getRetryDelayMilliseconds(response, attempt));
+  }
+
+  if (!response) {
+    throw new Error('Failed to resolve template release: no response received.');
+  }
 
   if (!response.ok) {
     const refLabel = templateRef ? `release tag "${templateRef}"` : 'latest release';
@@ -66,4 +86,26 @@ export async function fetchTemplateRelease(options: FetchTemplateReleaseOptions 
     tag: tagName,
     tarballUrl,
   };
+}
+
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || status >= 500;
+}
+
+function getRetryDelayMilliseconds(response: Response, attempt: number): number {
+  const retryAfterHeader = response.headers.get('retry-after');
+  if (retryAfterHeader) {
+    const asSeconds = Number(retryAfterHeader);
+    if (!Number.isNaN(asSeconds) && asSeconds >= 0) {
+      return Math.floor(asSeconds * 1000);
+    }
+  }
+
+  return Math.min(250 * attempt, 1500);
+}
+
+async function sleep(milliseconds: number): Promise<void> {
+  await new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
 }
