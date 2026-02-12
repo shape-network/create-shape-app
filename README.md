@@ -29,10 +29,13 @@ Options:
 - `--skip-install`
 - `--skip-git`
 - `--template-ref <tag>`
+- `-h, --help`
+- `-v, --version`
 
 ## Behavior
 - Scaffolds from `shape-network/builder-kit` release tags only (`latest` by default).
 - Rejects non-release refs (for example `main`) and canary tags.
+- In non-interactive terminals, `--yes` is required.
 - Copies template files, excluding VCS/internal maintainer metadata.
 - Applies defaults:
   - Root `package.json` name is set from the project directory name.

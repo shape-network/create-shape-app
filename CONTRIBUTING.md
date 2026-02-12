@@ -35,5 +35,5 @@ Use conventional commit format:
 
 ## Local Smoke Check
 ```bash
-node ./bin/create-shape-app.js my-app --yes --skip-git
+node ./bin/create-shape-app.js my-app --yes --skip-install --skip-git
 ```
