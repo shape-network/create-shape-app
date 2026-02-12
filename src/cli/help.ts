@@ -6,6 +6,7 @@ Usage:
 
 Notes:
   If project-name is omitted in an interactive terminal, you will be prompted.
+  If --pm is omitted in an interactive terminal, you can pick a package manager.
 
 Options:
   -y, --yes                 Skip confirmation prompts

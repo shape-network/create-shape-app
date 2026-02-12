@@ -45,10 +45,14 @@ test('fails when project name is missing in non-interactive mode', async () => {
 });
 
 test('prompts for project name in interactive mode', async () => {
+  let promptCalls = 0;
   const { runtime, output } = createRuntime({
     stdinIsTTY: true,
     stdoutIsTTY: true,
-    prompt: async () => 'my-app',
+    prompt: async () => {
+      promptCalls += 1;
+      return promptCalls === 1 ? 'my-app' : '';
+    },
     confirm: async () => true,
   });
 
@@ -56,6 +60,75 @@ test('prompts for project name in interactive mode', async () => {
 
   assert.equal(code, 0);
   assert.ok(output.some((line) => line.includes('Scaffolded my-app from builder-kit@v1.2.3.')));
+});
+
+test('uses default-yes confirmation prompt text', async () => {
+  let confirmationPrompt;
+  const { runtime } = createRuntime({
+    stdinIsTTY: true,
+    stdoutIsTTY: true,
+    confirm: async (message) => {
+      confirmationPrompt = message;
+      return true;
+    },
+  });
+
+  const code = await runCLI(['my-app'], runtime);
+
+  assert.equal(code, 0);
+  assert.equal(confirmationPrompt, 'Continue? (Y/n): ');
+});
+
+test('prompts for package manager in interactive mode when --pm is omitted', async () => {
+  let setupOptions;
+  const promptMessages = [];
+  const { runtime, output } = createRuntime({
+    stdinIsTTY: true,
+    stdoutIsTTY: true,
+    prompt: async (message) => {
+      promptMessages.push(message);
+      return message.startsWith('Select package manager') ? '2' : '';
+    },
+    confirm: async () => true,
+    runPostScaffoldSetup: async (options) => {
+      setupOptions = options;
+      return {
+        gitStatus: 'initialized',
+      };
+    },
+  });
+
+  const code = await runCLI(['my-app'], runtime);
+
+  assert.equal(code, 0);
+  assert.ok(promptMessages.some((message) => message.startsWith('Select package manager')));
+  assert.equal(setupOptions.packageManager, 'pnpm');
+  assert.ok(output.some((line) => line.includes('  package manager: pnpm')));
+});
+
+test('uses detected package manager without prompting when --yes is set', async () => {
+  let setupOptions;
+  const { runtime } = createRuntime({
+    env: {
+      npm_config_user_agent: 'pnpm/9.0.0 node/v20.18.0 darwin x64',
+    },
+    stdinIsTTY: true,
+    stdoutIsTTY: true,
+    prompt: async () => {
+      throw new Error('prompt should not run');
+    },
+    runPostScaffoldSetup: async (options) => {
+      setupOptions = options;
+      return {
+        gitStatus: 'initialized',
+      };
+    },
+  });
+
+  const code = await runCLI(['my-app', '--yes'], runtime);
+
+  assert.equal(code, 0);
+  assert.equal(setupOptions.packageManager, 'pnpm');
 });
 
 test('requires --yes in non-interactive mode when project name is provided', async () => {

@@ -2,7 +2,7 @@ import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 import readline from 'node:readline/promises';
-import { parseArgs } from './cli/args.js';
+import { parseArgs, type PackageManager } from './cli/args.js';
 import { CliUsageError } from './cli/errors.js';
 import { HELP_TEXT } from './cli/help.js';
 import {
@@ -17,6 +17,8 @@ import { fetchTemplateRelease, type TemplateRelease } from './template/release.j
 const require = createRequire(import.meta.url);
 const packageJson = require('../package.json') as { version?: string };
 export const CLI_VERSION = packageJson.version ?? '0.0.0';
+const PACKAGE_MANAGERS: readonly PackageManager[] = ['npm', 'pnpm', 'yarn', 'bun'];
+const PACKAGE_MANAGER_SET = new Set<PackageManager>(PACKAGE_MANAGERS);
 
 interface CliRuntime {
   env: NodeJS.ProcessEnv;
@@ -35,7 +37,7 @@ interface CliRuntime {
 }
 
 const DEFAULT_PROJECT_NAME_PROMPT = 'Project name: ';
-const DEFAULT_CONFIRM_PROMPT = 'Continue? (y/N): ';
+const DEFAULT_CONFIRM_PROMPT = 'Continue? (Y/n): ';
 
 export async function runCLI(argv: string[], runtimeOverrides: Partial<CliRuntime> = {}): Promise<number> {
   const runtime = createRuntime(runtimeOverrides);
@@ -63,7 +65,7 @@ export async function runCLI(argv: string[], runtimeOverrides: Partial<CliRuntim
 
     assertValidProjectName(projectName);
 
-    const packageManager = options.packageManager ?? detectPackageManager(runtime.env.npm_config_user_agent);
+    const packageManager = await resolvePackageManager(options.packageManager, options.yes, runtime);
     const targetDirectory = path.resolve(runtime.cwd, projectName);
 
     if (!options.yes) {
@@ -171,6 +173,54 @@ async function resolveProjectName(projectName: string | undefined, runtime: CliR
   return nextProjectName || undefined;
 }
 
+async function resolvePackageManager(
+  packageManager: PackageManager | undefined,
+  skipPrompts: boolean,
+  runtime: CliRuntime,
+): Promise<PackageManager> {
+  if (packageManager) {
+    return packageManager;
+  }
+
+  const detectedPackageManager = detectPackageManager(runtime.env.npm_config_user_agent);
+  if (!isInteractive(runtime) || skipPrompts) {
+    return detectedPackageManager;
+  }
+
+  runtime.print('Package manager:');
+  for (const [index, candidate] of PACKAGE_MANAGERS.entries()) {
+    const defaultLabel = candidate === detectedPackageManager ? ' (default)' : '';
+    runtime.print(`  ${index + 1}) ${candidate}${defaultLabel}`);
+  }
+
+  while (true) {
+    const answer = (await runtime.prompt(`Select package manager (1-${PACKAGE_MANAGERS.length}) [${detectedPackageManager}]: `))
+      .trim()
+      .toLowerCase();
+
+    if (!answer) {
+      return detectedPackageManager;
+    }
+
+    const selectedByIndex = Number(answer);
+    if (
+      Number.isInteger(selectedByIndex) &&
+      selectedByIndex >= 1 &&
+      selectedByIndex <= PACKAGE_MANAGERS.length
+    ) {
+      return PACKAGE_MANAGERS[selectedByIndex - 1];
+    }
+
+    if (PACKAGE_MANAGER_SET.has(answer as PackageManager)) {
+      return answer as PackageManager;
+    }
+
+    runtime.printError(
+      `Invalid package manager: ${answer}. Enter 1-${PACKAGE_MANAGERS.length} or one of ${PACKAGE_MANAGERS.join(', ')}.`,
+    );
+  }
+}
+
 function isInteractive(runtime: CliRuntime): boolean {
   return runtime.stdinIsTTY && runtime.stdoutIsTTY;
 }
@@ -190,7 +240,8 @@ async function defaultPrompt(message: string): Promise<string> {
 
 async function defaultConfirm(message: string): Promise<boolean> {
   const answer = await defaultPrompt(message);
-  return /^(y|yes)$/i.test(answer.trim());
+  const normalized = answer.trim().toLowerCase();
+  return normalized === '' || normalized === 'y' || normalized === 'yes';
 }
 
 function assertValidProjectName(projectName: string): void {
@@ -205,7 +256,7 @@ function assertValidProjectName(projectName: string): void {
   }
 }
 
-function detectPackageManager(userAgent: string | undefined): 'bun' | 'npm' | 'pnpm' | 'yarn' {
+function detectPackageManager(userAgent: string | undefined): PackageManager {
   if (typeof userAgent === 'string') {
     if (userAgent.startsWith('pnpm/')) {
       return 'pnpm';
