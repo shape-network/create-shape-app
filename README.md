@@ -36,6 +36,7 @@ Options:
 - Scaffolds from `shape-network/builder-kit` release tags only (`latest` by default).
 - Rejects non-release refs (for example `main`) and canary tags.
 - In non-interactive terminals, `--yes` is required.
+- In interactive terminals, package manager is selectable when `--pm` is not provided.
 - Copies template files, excluding VCS/internal maintainer metadata.
 - Applies defaults:
   - Root `package.json` name is set from the project directory name.
