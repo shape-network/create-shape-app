@@ -46,7 +46,7 @@
     "@types/node": "^25.2.2",
     "@typescript-eslint/parser": "^8.46.3",
     "eslint": "^9.39.1",
-    "globals": "^16.4.0",
+    "globals": "^17.3.0",
     "typescript": "^5.9.3"
   }
 }
