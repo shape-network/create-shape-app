@@ -44,6 +44,7 @@ Options:
 
 - Trigger: GitHub release publish event.
 - Guard: workflow checks release tag matches `package.json` version.
+- Requirement: repository secret `NPM_TOKEN` must be configured.
 - Publish target: npm package `create-shape-app`.
 
 ## Builder Kit Rollout

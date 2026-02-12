@@ -41,6 +41,15 @@ jobs:
       - name: Validate package
         run: bun run lint && bun run type-check && bun run test
 
+      - name: Verify npm token is configured
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "Missing NPM_TOKEN secret. Configure repository secret NPM_TOKEN before publishing."
+            exit 1
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
       - name: Publish to npm
         run: npm publish --provenance --access public
         env:

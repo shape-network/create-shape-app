@@ -22,9 +22,7 @@
     "access": "public"
   },
   "type": "module",
-  "bin": {
-    "create-shape-app": "./bin/create-shape-app.js"
-  },
+  "bin": "./bin/create-shape-app.js",
   "files": [
     "bin",
     "dist",
