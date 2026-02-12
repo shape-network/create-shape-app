@@ -42,7 +42,7 @@
     "prepack": "bun run lint && bun run type-check && bun run test"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.1",
+    "@eslint/js": "^10.0.1",
     "@types/node": "^25.2.2",
     "@typescript-eslint/parser": "^8.46.3",
     "eslint": "^9.39.1",
