@@ -5,17 +5,13 @@ CLI for scaffolding Shape apps from the Builder Kit template pinned to release t
 ## Quick Start
 
 ```bash
-bun create shape-app my-app --yes
-cd my-app
-bun run type-check
-bun run lint
-bun run contracts:compile
+npx create-shape-app
+bunx create-shape-app
 ```
 
-Equivalent commands:
-- `npm create shape-app@latest my-app -- --yes`
-- `pnpm dlx create-shape-app my-app --yes`
-- `yarn create shape-app my-app --yes`
+Non-interactive:
+- `npx create-shape-app my-app --yes`
+- `bunx create-shape-app my-app --yes`
 
 ## CLI Usage
 

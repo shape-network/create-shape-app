@@ -3,11 +3,8 @@
 Use this snippet in the `shape-network/builder-kit` README quickstart:
 
 ```bash
-bun create shape-app my-app --yes
-cd my-app
-bun run type-check
-bun run lint
-bun run contracts:compile
+npx create-shape-app
+bunx create-shape-app
 ```
 
 Notes:
