@@ -65,3 +65,8 @@ Builder Kit README quickstart update snippet is tracked in:
 - Guard: workflow checks release tag matches `package.json` version.
 - Requirement: repository secret `NPM_TOKEN` must be configured.
 - Publish target: npm package `create-shape-app`.
+
+## Community
+- Contribution guide: `CONTRIBUTING.md`
+- Security policy: `SECURITY.md`
+- Code of conduct: `CODE_OF_CONDUCT.md`

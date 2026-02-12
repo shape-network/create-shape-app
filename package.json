@@ -1,6 +1,6 @@
 {
   "name": "create-shape-app",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Scaffold Shape Builder Kit projects from pinned release tags.",
   "license": "MIT",
   "repository": {
