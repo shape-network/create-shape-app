@@ -46,6 +46,7 @@ Build and launch a dedicated `create-shape-app` CLI in its own repository that s
 - February 11, 2026: Completed Phase 5 smoke validation in `test/integration-smoke.test.mjs` and switched GitHub workflows to Bun-based validation.
 - February 11, 2026: Completed Phase 6 publishing/rollout prep in `package.json`, `.github/workflows/release.yml`, and `docs/builder-kit-quickstart.md`.
 - February 11, 2026: Added release lookup retry hardening in `src/template/release.ts` for 429/5xx failures with bounded retries and tests.
+- February 11, 2026: Ran release gate validation with `bun run prepack` (lint + type-check + full test suite passed).
 - Next implementation target: **Release execution (`v0.1.0`)**.
 
 ## Validation
