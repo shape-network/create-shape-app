@@ -8,25 +8,6 @@ Choose one:
 - `npx create-shape-app`
 - `bunx create-shape-app`
 
-Non-interactive (choose one):
-- `npx create-shape-app my-app --yes`
-- `bunx create-shape-app my-app --yes`
-
-## CLI Usage
-
-```bash
-create-shape-app [project-name] [options]
-```
-
-Options:
-- `-y, --yes`
-- `--pm <bun|npm|pnpm|yarn>`
-- `--skip-install`
-- `--skip-git`
-- `--template-ref <tag>`
-- `-h, --help`
-- `-v, --version`
-
 ## Behavior
 - Scaffolds from `shape-network/builder-kit` release tags only (`latest` by default).
 - Rejects non-release refs (for example `main`) and canary tags.
@@ -55,9 +36,6 @@ bun run lint
 bun run type-check
 bun run test
 ```
-
-Builder Kit README quickstart update snippet is tracked in:
-- `docs/builder-kit-quickstart.md`
 
 ## Publish
 - Trigger: GitHub release publish event.
