@@ -25,7 +25,7 @@ test('runPostScaffoldSetup applies package name and env defaults', async () => {
     await writeFile(join(root, '.env.example'), 'API_URL=http://localhost:3000\n', 'utf8');
 
     const calls = [];
-    await runPostScaffoldSetup(
+    const result = await runPostScaffoldSetup(
       {
         targetDirectory: root,
         projectName: 'My-App',
@@ -44,6 +44,7 @@ test('runPostScaffoldSetup applies package name and env defaults', async () => {
     assert.equal(packageJson.name, 'my-app');
     assert.equal(envFile, 'API_URL=http://localhost:3000\n');
     assert.equal(calls.length, 0);
+    assert.equal(result.gitStatus, 'skipped');
   } finally {
     await rm(root, { recursive: true, force: true });
   }
@@ -57,7 +58,7 @@ test('runPostScaffoldSetup runs install and git commands when enabled', async ()
     await writeFile(join(root, 'package.json'), JSON.stringify({ name: 'placeholder' }, null, 2), 'utf8');
 
     const calls = [];
-    await runPostScaffoldSetup(
+    const result = await runPostScaffoldSetup(
       {
         targetDirectory: root,
         projectName: 'test-app',
@@ -76,6 +77,35 @@ test('runPostScaffoldSetup runs install and git commands when enabled', async ()
       { command: 'git', args: ['add', '--all'], cwd: root },
       { command: 'git', args: ['commit', '-m', 'Initial commit from create-shape-app'], cwd: root },
     ]);
+    assert.equal(result.gitStatus, 'initialized');
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test('runPostScaffoldSetup continues when git init fails', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'create-shape-app-test-'));
+
+  try {
+    await writeFile(join(root, 'package.json'), JSON.stringify({ name: 'placeholder' }, null, 2), 'utf8');
+
+    const result = await runPostScaffoldSetup(
+      {
+        targetDirectory: root,
+        projectName: 'test-app',
+        packageManager: 'bun',
+        skipInstall: true,
+        skipGit: false,
+      },
+      async (command) => {
+        if (command === 'git') {
+          throw new Error('git missing');
+        }
+      },
+    );
+
+    assert.equal(result.gitStatus, 'failed');
+    assert.match(result.gitFailureMessage, /git missing/);
   } finally {
     await rm(root, { recursive: true, force: true });
   }

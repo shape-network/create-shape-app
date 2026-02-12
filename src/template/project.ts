@@ -1,6 +1,8 @@
 import { cp, mkdir, readdir, stat } from 'node:fs/promises';
 import { basename } from 'node:path';
 
+const EXCLUDED_TEMPLATE_ENTRIES = new Set(['.git', '.claude', 'AGENTS.md', 'CLAUDE.md', '.DS_Store']);
+
 export async function prepareTargetDirectory(targetDirectory: string): Promise<void> {
   const directoryExists = await pathExists(targetDirectory);
 
@@ -25,7 +27,7 @@ export async function copyTemplateToDirectory(templateRoot: string, targetDirect
     recursive: true,
     force: false,
     filter(sourcePath) {
-      return basename(sourcePath) !== '.git';
+      return !EXCLUDED_TEMPLATE_ENTRIES.has(basename(sourcePath));
     },
   });
 }

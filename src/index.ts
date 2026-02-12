@@ -1,14 +1,22 @@
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { createRequire } from 'node:module';
 import readline from 'node:readline/promises';
 import { parseArgs } from './cli/args.js';
+import { CliUsageError } from './cli/errors.js';
 import { HELP_TEXT } from './cli/help.js';
-import { runPostScaffoldSetup, type PostScaffoldSetupOptions } from './scaffold/post-setup.js';
+import {
+  runPostScaffoldSetup,
+  type PostScaffoldSetupOptions,
+  type PostScaffoldSetupResult,
+} from './scaffold/post-setup.js';
 import { materializeTemplateFromRelease, type MaterializedTemplate } from './template/materialize.js';
 import { copyTemplateToDirectory, prepareTargetDirectory } from './template/project.js';
 import { fetchTemplateRelease, type TemplateRelease } from './template/release.js';
 
-export const CLI_VERSION = '0.1.1';
+const require = createRequire(import.meta.url);
+const packageJson = require('../package.json') as { version?: string };
+export const CLI_VERSION = packageJson.version ?? '0.0.0';
 
 interface CliRuntime {
   env: NodeJS.ProcessEnv;
@@ -23,7 +31,7 @@ interface CliRuntime {
   materializeTemplate: (release: TemplateRelease) => Promise<MaterializedTemplate>;
   prepareTargetDirectory: (targetDirectory: string) => Promise<void>;
   copyTemplateToDirectory: (templateRoot: string, targetDirectory: string) => Promise<void>;
-  runPostScaffoldSetup: (options: PostScaffoldSetupOptions) => Promise<void>;
+  runPostScaffoldSetup: (options: PostScaffoldSetupOptions) => Promise<PostScaffoldSetupResult>;
 }
 
 const DEFAULT_PROJECT_NAME_PROMPT = 'Project name: ';
@@ -94,7 +102,7 @@ export async function runCLI(argv: string[], runtimeOverrides: Partial<CliRuntim
       await materializedTemplate.cleanup();
     }
 
-    await runtime.runPostScaffoldSetup({
+    const setupResult = await runtime.runPostScaffoldSetup({
       targetDirectory,
       projectName,
       packageManager,
@@ -104,20 +112,31 @@ export async function runCLI(argv: string[], runtimeOverrides: Partial<CliRuntim
 
     runtime.print(`Scaffolded ${projectName} from builder-kit@${release.tag}.`);
     runtime.print(`Dependencies: ${options.skipInstall ? 'skipped' : `installed via ${packageManager}`}`);
-    runtime.print(`Git setup: ${options.skipGit ? 'skipped' : 'initialized with initial commit'}`);
+    if (setupResult.gitStatus === 'initialized') {
+      runtime.print('Git setup: initialized with initial commit');
+    } else if (setupResult.gitStatus === 'skipped') {
+      runtime.print('Git setup: skipped');
+    } else {
+      runtime.print('Git setup: skipped due to git initialization failure');
+      runtime.printError(`Warning: ${setupResult.gitFailureMessage ?? 'Unable to initialize git repository.'}`);
+    }
     return 0;
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unexpected error';
     runtime.printError(message);
-    runtime.printError('');
-    runtime.printError(HELP_TEXT);
+    if (error instanceof CliUsageError) {
+      runtime.printError('');
+      runtime.printError(HELP_TEXT);
+    }
     return 1;
   }
 }
 
 function createRuntime(overrides: Partial<CliRuntime>): CliRuntime {
+  const env = process.env;
+
   return {
-    env: process.env,
+    env,
     cwd: process.cwd(),
     stdinIsTTY: Boolean(process.stdin.isTTY),
     stdoutIsTTY: Boolean(process.stdout.isTTY),
@@ -125,7 +144,11 @@ function createRuntime(overrides: Partial<CliRuntime>): CliRuntime {
     printError: console.error,
     prompt: defaultPrompt,
     confirm: defaultConfirm,
-    resolveTemplateRelease: (templateRef) => fetchTemplateRelease({ templateRef }),
+    resolveTemplateRelease: (templateRef) =>
+      fetchTemplateRelease({
+        templateRef,
+        githubToken: env.GITHUB_TOKEN,
+      }),
     materializeTemplate: materializeTemplateFromRelease,
     prepareTargetDirectory,
     copyTemplateToDirectory,
@@ -172,11 +195,11 @@ async function defaultConfirm(message: string): Promise<boolean> {
 
 function assertValidProjectName(projectName: string): void {
   if (projectName === '.' || projectName === '..') {
-    throw new Error('Invalid project name: "." and ".." are not allowed.');
+    throw new CliUsageError('Invalid project name: "." and ".." are not allowed.');
   }
 
   if (!/^[a-zA-Z0-9._-]+$/.test(projectName)) {
-    throw new Error(
+    throw new CliUsageError(
       'Invalid project name: use only letters, numbers, ".", "-", or "_" and no path separators.',
     );
   }

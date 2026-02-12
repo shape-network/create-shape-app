@@ -7,6 +7,7 @@ export interface FetchTemplateReleaseOptions {
   owner?: string;
   repo?: string;
   templateRef?: string;
+  githubToken?: string;
   fetchImpl?: typeof fetch;
   sleepImpl?: (milliseconds: number) => Promise<void>;
 }
@@ -31,6 +32,7 @@ export async function fetchTemplateRelease(options: FetchTemplateReleaseOptions 
   const owner = options.owner ?? DEFAULT_OWNER;
   const repo = options.repo ?? DEFAULT_REPO;
   const templateRef = options.templateRef;
+  const githubToken = options.githubToken;
   const fetchImpl = options.fetchImpl ?? fetch;
   const sleepImpl = options.sleepImpl ?? sleep;
   const maxAttempts = 3;
@@ -46,10 +48,7 @@ export async function fetchTemplateRelease(options: FetchTemplateReleaseOptions 
   let response: Response | undefined;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     response = await fetchImpl(endpoint, {
-      headers: {
-        Accept: 'application/vnd.github+json',
-        'User-Agent': 'create-shape-app',
-      },
+      headers: buildHeaders(githubToken),
     });
 
     if (response.ok) {
@@ -68,8 +67,7 @@ export async function fetchTemplateRelease(options: FetchTemplateReleaseOptions 
   }
 
   if (!response.ok) {
-    const refLabel = templateRef ? `release tag "${templateRef}"` : 'latest release';
-    throw new Error(`Failed to resolve ${refLabel}: HTTP ${response.status}`);
+    throw new Error(await buildReleaseLookupError(response, templateRef));
   }
 
   const payload = (await response.json()) as Record<string, unknown>;
@@ -86,6 +84,71 @@ export async function fetchTemplateRelease(options: FetchTemplateReleaseOptions 
     tag: tagName,
     tarballUrl,
   };
+}
+
+function buildHeaders(githubToken: string | undefined): Record<string, string> {
+  const headers: Record<string, string> = {
+    Accept: 'application/vnd.github+json',
+    'User-Agent': 'create-shape-app',
+  };
+
+  if (githubToken) {
+    headers.Authorization = `Bearer ${githubToken}`;
+  }
+
+  return headers;
+}
+
+async function buildReleaseLookupError(response: Response, templateRef: string | undefined): Promise<string> {
+  const refLabel = templateRef ? `release tag "${templateRef}"` : 'latest release';
+  const apiMessage = await readApiMessage(response);
+  const rateLimited =
+    response.status === 429 ||
+    (response.status === 403 && response.headers.get('x-ratelimit-remaining') === '0');
+
+  if (rateLimited) {
+    const resetHint = getRateLimitResetHint(response.headers.get('x-ratelimit-reset'));
+    return [
+      `Failed to resolve ${refLabel}: GitHub API rate limit reached (HTTP ${response.status}).`,
+      resetHint,
+      'Retry later or set GITHUB_TOKEN.',
+    ]
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  if (apiMessage) {
+    return `Failed to resolve ${refLabel}: ${apiMessage} (HTTP ${response.status}).`;
+  }
+
+  return `Failed to resolve ${refLabel}: HTTP ${response.status}.`;
+}
+
+async function readApiMessage(response: Response): Promise<string | undefined> {
+  try {
+    const payload = (await response.clone().json()) as Record<string, unknown>;
+    if (typeof payload.message === 'string' && payload.message.trim()) {
+      return payload.message.trim();
+    }
+  } catch {
+    // Ignore parse failures and fall back to status-only messaging.
+  }
+
+  return undefined;
+}
+
+function getRateLimitResetHint(resetEpochSeconds: string | null): string | undefined {
+  if (!resetEpochSeconds) {
+    return undefined;
+  }
+
+  const reset = Number(resetEpochSeconds);
+  if (!Number.isFinite(reset)) {
+    return undefined;
+  }
+
+  const resetDate = new Date(reset * 1000);
+  return `GitHub API reset time: ${resetDate.toISOString()}.`;
 }
 
 function isRetryableStatus(status: number): boolean {

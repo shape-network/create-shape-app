@@ -1,3 +1,5 @@
+import { CliUsageError } from './errors.js';
+
 export type PackageManager = 'bun' | 'npm' | 'pnpm' | 'yarn';
 
 export interface CliOptions {
@@ -72,18 +74,18 @@ export function parseArgs(argv: string[]): CliOptions {
     }
 
     if (arg.startsWith('-')) {
-      throw new Error(`Unknown option: ${arg}`);
+      throw new CliUsageError(`Unknown option: ${arg}`);
     }
 
     if (options.projectName) {
-      throw new Error('Only one project name may be provided.');
+      throw new CliUsageError('Only one project name may be provided.');
     }
 
     options.projectName = arg;
   }
 
   if (nextValueFor) {
-    throw new Error(`Missing value for ${nextValueFor}`);
+    throw new CliUsageError(`Missing value for ${nextValueFor}`);
   }
 
   return options;
@@ -102,7 +104,7 @@ function assignFlagValue(options: CliOptions, flag: '--pm' | '--template-ref', v
 
 function assignPackageManager(options: CliOptions, value: string): void {
   if (!VALID_PACKAGE_MANAGERS.has(value as PackageManager)) {
-    throw new Error(`Unsupported package manager: ${value}`);
+    throw new CliUsageError(`Unsupported package manager: ${value}`);
   }
 
   options.packageManager = value as PackageManager;
@@ -110,7 +112,7 @@ function assignPackageManager(options: CliOptions, value: string): void {
 
 function parseRequiredValue(flag: string, value: string): string {
   if (!value.trim()) {
-    throw new Error(`Missing value for ${flag}`);
+    throw new CliUsageError(`Missing value for ${flag}`);
   }
 
   return value;

@@ -40,15 +40,22 @@ test('copyTemplateToDirectory copies files and excludes .git', async () => {
 
   try {
     await mkdir(join(templateRoot, '.git'), { recursive: true });
+    await mkdir(join(templateRoot, '.claude'), { recursive: true });
     await mkdir(target, { recursive: true });
     await writeFile(join(templateRoot, 'README.md'), 'hello');
     await writeFile(join(templateRoot, '.git', 'config'), 'git config');
+    await writeFile(join(templateRoot, '.claude', 'settings.json'), '{}');
+    await writeFile(join(templateRoot, 'AGENTS.md'), 'private');
+    await writeFile(join(templateRoot, 'CLAUDE.md'), 'private');
 
     await copyTemplateToDirectory(templateRoot, target);
 
     const targetEntries = await readdir(target);
     assert.ok(targetEntries.includes('README.md'));
     assert.ok(!targetEntries.includes('.git'));
+    assert.ok(!targetEntries.includes('.claude'));
+    assert.ok(!targetEntries.includes('AGENTS.md'));
+    assert.ok(!targetEntries.includes('CLAUDE.md'));
   } finally {
     await rm(root, { recursive: true, force: true });
   }

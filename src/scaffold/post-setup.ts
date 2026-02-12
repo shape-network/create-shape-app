@@ -13,12 +13,17 @@ export interface PostScaffoldSetupOptions {
   skipGit: boolean;
 }
 
+export interface PostScaffoldSetupResult {
+  gitStatus: 'initialized' | 'skipped' | 'failed';
+  gitFailureMessage?: string;
+}
+
 type CommandRunner = (command: string, args: string[], cwd: string) => Promise<void>;
 
 export async function runPostScaffoldSetup(
   options: PostScaffoldSetupOptions,
   runCommand: CommandRunner = executeCommand,
-): Promise<void> {
+): Promise<PostScaffoldSetupResult> {
   await applyProjectDefaults(options.targetDirectory, options.projectName);
 
   if (!options.skipInstall) {
@@ -26,10 +31,21 @@ export async function runPostScaffoldSetup(
     await runCommand(command, args, options.targetDirectory);
   }
 
-  if (!options.skipGit) {
+  if (options.skipGit) {
+    return { gitStatus: 'skipped' };
+  }
+
+  try {
     await runCommand('git', ['init'], options.targetDirectory);
     await runCommand('git', ['add', '--all'], options.targetDirectory);
     await runCommand('git', ['commit', '-m', INITIAL_COMMIT_MESSAGE], options.targetDirectory);
+    return { gitStatus: 'initialized' };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown git error';
+    return {
+      gitStatus: 'failed',
+      gitFailureMessage: message,
+    };
   }
 }
 

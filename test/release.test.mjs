@@ -17,8 +17,8 @@ test('rejects non-tag or canary refs', () => {
 
 test('fetches latest release endpoint by default', async () => {
   const calls = [];
-  const fetchImpl = async (url) => {
-    calls.push(String(url));
+  const fetchImpl = async (url, init) => {
+    calls.push({ url: String(url), init });
     return new Response(
       JSON.stringify({
         tag_name: 'v2.0.0',
@@ -31,7 +31,8 @@ test('fetches latest release endpoint by default', async () => {
   const release = await fetchTemplateRelease({ fetchImpl });
 
   assert.equal(calls.length, 1);
-  assert.ok(calls[0].endsWith('/releases/latest'));
+  assert.ok(calls[0].url.endsWith('/releases/latest'));
+  assert.equal(calls[0].init.headers['User-Agent'], 'create-shape-app');
   assert.equal(release.tag, 'v2.0.0');
 });
 
@@ -110,4 +111,50 @@ test('fails after retry budget is exhausted', async () => {
   );
 
   assert.equal(callCount, 3);
+});
+
+test('includes auth header when github token is provided', async () => {
+  const calls = [];
+  const fetchImpl = async (url, init) => {
+    calls.push({ url: String(url), init });
+    return new Response(
+      JSON.stringify({
+        tag_name: 'v2.0.0',
+        tarball_url: 'https://example.com/release.tar.gz',
+      }),
+      { status: 200 },
+    );
+  };
+
+  await fetchTemplateRelease({
+    githubToken: 'secret-token',
+    fetchImpl,
+  });
+
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].init.headers.Authorization, 'Bearer secret-token');
+});
+
+test('returns actionable message for rate limit responses', async () => {
+  const fetchImpl = async () =>
+    new Response(
+      JSON.stringify({
+        message: 'API rate limit exceeded',
+      }),
+      {
+        status: 403,
+        headers: {
+          'x-ratelimit-remaining': '0',
+          'x-ratelimit-reset': '1735689600',
+        },
+      },
+    );
+
+  await assert.rejects(
+    () =>
+      fetchTemplateRelease({
+        fetchImpl,
+      }),
+    /set GITHUB_TOKEN/,
+  );
 });

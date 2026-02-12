@@ -26,7 +26,9 @@ function createRuntime(overrides = {}) {
     }),
     prepareTargetDirectory: async () => {},
     copyTemplateToDirectory: async () => {},
-    runPostScaffoldSetup: async () => {},
+    runPostScaffoldSetup: async () => ({
+      gitStatus: 'initialized',
+    }),
     ...overrides,
   };
 
@@ -89,4 +91,33 @@ test('rejects invalid project names', async () => {
 
   assert.equal(code, 1);
   assert.ok(errors.some((line) => line.includes('Invalid project name:')));
+});
+
+test('does not print usage help for non-usage errors', async () => {
+  const { runtime, errors } = createRuntime({
+    resolveTemplateRelease: async () => {
+      throw new Error('release lookup failed');
+    },
+  });
+
+  const code = await runCLI(['my-app', '--yes'], runtime);
+
+  assert.equal(code, 1);
+  assert.ok(errors.some((line) => line.includes('release lookup failed')));
+  assert.ok(!errors.some((line) => line.includes('Usage:')));
+});
+
+test('continues when git setup fails and prints warning', async () => {
+  const { runtime, output, errors } = createRuntime({
+    runPostScaffoldSetup: async () => ({
+      gitStatus: 'failed',
+      gitFailureMessage: 'git missing',
+    }),
+  });
+
+  const code = await runCLI(['my-app', '--yes'], runtime);
+
+  assert.equal(code, 0);
+  assert.ok(output.some((line) => line.includes('Git setup: skipped due to git initialization failure')));
+  assert.ok(errors.some((line) => line.includes('Warning: git missing')));
 });
