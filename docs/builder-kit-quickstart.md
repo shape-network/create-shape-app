@@ -2,10 +2,9 @@
 
 Use this snippet in the `shape-network/builder-kit` README quickstart:
 
-```bash
-npx create-shape-app
-bunx create-shape-app
-```
+Choose one:
+- `npx create-shape-app`
+- `bunx create-shape-app`
 
 Notes:
 - `create-shape-app` scaffolds from the latest Builder Kit release tag.

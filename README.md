@@ -4,12 +4,11 @@ CLI for scaffolding Shape apps from the Builder Kit template pinned to release t
 
 ## Quick Start
 
-```bash
-npx create-shape-app
-bunx create-shape-app
-```
+Choose one:
+- `npx create-shape-app`
+- `bunx create-shape-app`
 
-Non-interactive:
+Non-interactive (choose one):
 - `npx create-shape-app my-app --yes`
 - `bunx create-shape-app my-app --yes`
 
