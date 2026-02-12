@@ -49,6 +49,7 @@ Build and launch a dedicated `create-shape-app` CLI in its own repository that s
 - February 11, 2026: Ran release gate validation with `bun run prepack` (lint + type-check + full test suite passed).
 - February 12, 2026: Attempted release `v0.1.0`; workflow failed in CI due shell-dependent test glob expansion. Fixed test script for shell-agnostic execution and prepared patch release `v0.1.1`.
 - February 12, 2026: Attempted release `v0.1.1`; validation passed, publish failed due missing `NPM_TOKEN` secret. Added explicit token preflight check in release workflow.
+- February 12, 2026: Confirmed repository has no configured Actions secret entries; publish remains blocked until `NPM_TOKEN` is set.
 - Next implementation target: **Set `NPM_TOKEN` secret and re-run publish for `v0.1.1`**.
 
 ## Validation
