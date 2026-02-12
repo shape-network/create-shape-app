@@ -59,6 +59,74 @@ test('fetches explicit tag endpoint', async () => {
   assert.equal(release.tag, 'v2.1.0');
 });
 
+test('falls back to latest supported tag when latest release is missing', async () => {
+  const calls = [];
+  const fetchImpl = async (url) => {
+    calls.push(String(url));
+
+    if (calls.length === 1) {
+      return new Response(
+        JSON.stringify({
+          message: 'Not Found',
+        }),
+        { status: 404 },
+      );
+    }
+
+    return new Response(
+      JSON.stringify([
+        { name: 'main' },
+        { name: 'v2.2.0-canary.0' },
+        { name: 'v2.1.0' },
+      ]),
+      { status: 200 },
+    );
+  };
+
+  const release = await fetchTemplateRelease({ fetchImpl });
+
+  assert.equal(calls.length, 2);
+  assert.ok(calls[0].endsWith('/releases/latest'));
+  assert.ok(calls[1].includes('/tags?per_page=100'));
+  assert.equal(release.tag, 'v2.1.0');
+  assert.equal(release.tarballUrl, 'https://api.github.com/repos/shape-network/builder-kit/tarball/v2.1.0');
+});
+
+test('falls back to tags for explicit template ref when release endpoint is missing', async () => {
+  const calls = [];
+  const fetchImpl = async (url) => {
+    calls.push(String(url));
+
+    if (calls.length === 1) {
+      return new Response(
+        JSON.stringify({
+          message: 'Not Found',
+        }),
+        { status: 404 },
+      );
+    }
+
+    return new Response(
+      JSON.stringify([
+        { name: 'v2.1.0' },
+        { name: 'v2.0.0' },
+      ]),
+      { status: 200 },
+    );
+  };
+
+  const release = await fetchTemplateRelease({
+    templateRef: '2.1.0',
+    fetchImpl,
+  });
+
+  assert.equal(calls.length, 2);
+  assert.ok(calls[0].includes('/releases/tags/2.1.0'));
+  assert.ok(calls[1].includes('/tags?per_page=100'));
+  assert.equal(release.tag, 'v2.1.0');
+  assert.equal(release.tarballUrl, 'https://api.github.com/repos/shape-network/builder-kit/tarball/v2.1.0');
+});
+
 test('retries on 429 and succeeds on subsequent attempt', async () => {
   const calls = [];
   const sleeps = [];

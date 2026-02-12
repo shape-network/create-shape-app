@@ -44,11 +44,12 @@ export async function fetchTemplateRelease(options: FetchTemplateReleaseOptions 
   const endpoint = templateRef
     ? `https://api.github.com/repos/${owner}/${repo}/releases/tags/${encodeURIComponent(templateRef)}`
     : `https://api.github.com/repos/${owner}/${repo}/releases/latest`;
+  const headers = buildHeaders(githubToken);
 
   let response: Response | undefined;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     response = await fetchImpl(endpoint, {
-      headers: buildHeaders(githubToken),
+      headers,
     });
 
     if (response.ok) {
@@ -67,6 +68,37 @@ export async function fetchTemplateRelease(options: FetchTemplateReleaseOptions 
   }
 
   if (!response.ok) {
+    if (response.status === 404) {
+      if (templateRef) {
+        const resolvedTag = await resolveTemplateRefTag({
+          owner,
+          repo,
+          templateRef,
+          githubToken,
+          fetchImpl,
+        });
+        if (resolvedTag) {
+          return {
+            tag: resolvedTag,
+            tarballUrl: buildTagTarballUrl(owner, repo, resolvedTag),
+          };
+        }
+      } else {
+        const latestTag = await resolveLatestSupportedTag({
+          owner,
+          repo,
+          githubToken,
+          fetchImpl,
+        });
+        if (latestTag) {
+          return {
+            tag: latestTag,
+            tarballUrl: buildTagTarballUrl(owner, repo, latestTag),
+          };
+        }
+      }
+    }
+
     throw new Error(await buildReleaseLookupError(response, templateRef));
   }
 
@@ -84,6 +116,10 @@ export async function fetchTemplateRelease(options: FetchTemplateReleaseOptions 
     tag: tagName,
     tarballUrl,
   };
+}
+
+function buildTagTarballUrl(owner: string, repo: string, tag: string): string {
+  return `https://api.github.com/repos/${owner}/${repo}/tarball/${encodeURIComponent(tag)}`;
 }
 
 function buildHeaders(githubToken: string | undefined): Record<string, string> {
@@ -122,6 +158,73 @@ async function buildReleaseLookupError(response: Response, templateRef: string |
   }
 
   return `Failed to resolve ${refLabel}: HTTP ${response.status}.`;
+}
+
+interface TagLookupOptions {
+  owner: string;
+  repo: string;
+  githubToken?: string;
+  fetchImpl: typeof fetch;
+}
+
+async function resolveLatestSupportedTag(options: TagLookupOptions): Promise<string | undefined> {
+  const tags = await fetchTagNames(options);
+  return tags.find((tag) => isSupportedTag(tag));
+}
+
+async function resolveTemplateRefTag(
+  options: TagLookupOptions & {
+    templateRef: string;
+  },
+): Promise<string | undefined> {
+  const tags = await fetchTagNames(options);
+  const exactMatch = tags.find((tag) => tag === options.templateRef && isSupportedTag(tag));
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  const normalizedTemplateRef = normalizeTag(options.templateRef);
+  return tags.find((tag) => normalizeTag(tag) === normalizedTemplateRef && isSupportedTag(tag));
+}
+
+async function fetchTagNames(options: TagLookupOptions): Promise<string[]> {
+  const response = await options.fetchImpl(
+    `https://api.github.com/repos/${options.owner}/${options.repo}/tags?per_page=100`,
+    {
+      headers: buildHeaders(options.githubToken),
+    },
+  );
+
+  if (!response.ok) {
+    return [];
+  }
+
+  const payload = (await response.json()) as unknown;
+  if (!Array.isArray(payload)) {
+    return [];
+  }
+
+  return payload.flatMap((item) => {
+    if (!item || typeof item !== 'object') {
+      return [];
+    }
+
+    const name = (item as { name?: unknown }).name;
+    return typeof name === 'string' && name.trim() ? [name] : [];
+  });
+}
+
+function isSupportedTag(tag: string): boolean {
+  try {
+    assertTagIsSupported(tag);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function normalizeTag(tag: string): string {
+  return tag.startsWith('v') ? tag.slice(1) : tag;
 }
 
 async function readApiMessage(response: Response): Promise<string | undefined> {
