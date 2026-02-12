@@ -96,6 +96,19 @@ export async function fetchTemplateRelease(options: FetchTemplateReleaseOptions 
             tarballUrl: buildTagTarballUrl(owner, repo, latestTag),
           };
         }
+
+        const defaultBranch = await resolveDefaultBranch({
+          owner,
+          repo,
+          githubToken,
+          fetchImpl,
+        });
+        if (defaultBranch) {
+          return {
+            tag: defaultBranch,
+            tarballUrl: buildTagTarballUrl(owner, repo, defaultBranch),
+          };
+        }
       }
     }
 
@@ -212,6 +225,24 @@ async function fetchTagNames(options: TagLookupOptions): Promise<string[]> {
     const name = (item as { name?: unknown }).name;
     return typeof name === 'string' && name.trim() ? [name] : [];
   });
+}
+
+async function resolveDefaultBranch(options: TagLookupOptions): Promise<string | undefined> {
+  const response = await options.fetchImpl(`https://api.github.com/repos/${options.owner}/${options.repo}`, {
+    headers: buildHeaders(options.githubToken),
+  });
+
+  if (!response.ok) {
+    return undefined;
+  }
+
+  const payload = (await response.json()) as Record<string, unknown>;
+  const defaultBranch = payload.default_branch;
+  if (typeof defaultBranch !== 'string' || !defaultBranch.trim()) {
+    return undefined;
+  }
+
+  return defaultBranch;
 }
 
 function isSupportedTag(tag: string): boolean {
