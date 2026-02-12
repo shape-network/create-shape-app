@@ -47,7 +47,8 @@ Build and launch a dedicated `create-shape-app` CLI in its own repository that s
 - February 11, 2026: Completed Phase 6 publishing/rollout prep in `package.json`, `.github/workflows/release.yml`, and `docs/builder-kit-quickstart.md`.
 - February 11, 2026: Added release lookup retry hardening in `src/template/release.ts` for 429/5xx failures with bounded retries and tests.
 - February 11, 2026: Ran release gate validation with `bun run prepack` (lint + type-check + full test suite passed).
-- Next implementation target: **Release execution (`v0.1.0`)**.
+- February 12, 2026: Attempted release `v0.1.0`; workflow failed in CI due shell-dependent test glob expansion. Fixed test script for shell-agnostic execution and prepared patch release `v0.1.1`.
+- Next implementation target: **Release execution (`v0.1.1`)**.
 
 ## Validation
 - `bun create shape-app my-app --yes --skip-install --skip-git`
@@ -58,7 +59,7 @@ Build and launch a dedicated `create-shape-app` CLI in its own repository that s
   - `bun run contracts:compile`
 
 ## Rollout
-- Publish `v0.1.0` with Builder Kit parity and stable release-tag sourcing.
+- Publish `v0.1.1` with Builder Kit parity and stable release-tag sourcing.
 - Update Builder Kit README quickstart to default to `create-shape-app`.
 - Announce with migration note: direct cloning remains optional, CLI is recommended path.
 

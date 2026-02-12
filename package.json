@@ -1,6 +1,6 @@
 {
   "name": "create-shape-app",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Scaffold Shape Builder Kit projects from pinned release tags.",
   "license": "MIT",
   "repository": {
@@ -38,7 +38,7 @@
     "type-check": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint . --max-warnings=0",
     "lint:fix": "eslint . --fix",
-    "test": "bun run build && node --test ./test/**/*.test.mjs",
+    "test": "bun run build && node --test ./test/*.test.mjs",
     "dev": "bun run build && node ./bin/create-shape-app.js --help",
     "prepack": "bun run lint && bun run type-check && bun run test"
   },

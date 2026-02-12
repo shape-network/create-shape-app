@@ -8,7 +8,7 @@ import { materializeTemplateFromRelease, type MaterializedTemplate } from './tem
 import { copyTemplateToDirectory, prepareTargetDirectory } from './template/project.js';
 import { fetchTemplateRelease, type TemplateRelease } from './template/release.js';
 
-export const CLI_VERSION = '0.1.0';
+export const CLI_VERSION = '0.1.1';
 
 interface CliRuntime {
   env: NodeJS.ProcessEnv;

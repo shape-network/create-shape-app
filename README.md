@@ -4,7 +4,7 @@ CLI for scaffolding Shape apps from the Builder Kit template pinned to release t
 
 ## Status
 
-Current release target: `v0.1.0`.
+Current release target: `v0.1.1`.
 
 Implemented:
 - Release-tag-only template sourcing from `shape-network/builder-kit`
