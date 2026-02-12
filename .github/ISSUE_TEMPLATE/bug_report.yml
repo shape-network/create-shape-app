@@ -1,0 +1,43 @@
+name: Bug report
+description: Report a reproducible problem in create-shape-app.
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Short description of the problem.
+      placeholder: What failed?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Exact commands and inputs.
+      placeholder: |
+        1. bun create shape-app my-app --yes
+        2. ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: Include OS, Node version, package manager version, and CLI version.
+      placeholder: macOS 14, Node 20.18.0, Bun 1.3.6, create-shape-app 0.1.2
+    validations:
+      required: true

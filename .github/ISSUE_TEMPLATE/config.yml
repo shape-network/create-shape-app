@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security report
+    url: https://github.com/shape-network/create-shape-app/security/advisories/new
+    about: Report security issues privately. See SECURITY.md for email contact.
