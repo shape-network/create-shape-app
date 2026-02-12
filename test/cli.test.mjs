@@ -14,6 +14,7 @@ function createRuntime(overrides = {}) {
     print: (message) => output.push(String(message)),
     printError: (message) => errors.push(String(message)),
     prompt: async () => '',
+    selectPackageManager: async ({ defaultValue }) => defaultValue,
     confirm: async () => true,
     cwd: '/tmp',
     resolveTemplateRelease: async () => ({
@@ -81,13 +82,13 @@ test('uses default-yes confirmation prompt text', async () => {
 
 test('prompts for package manager in interactive mode when --pm is omitted', async () => {
   let setupOptions;
-  const promptMessages = [];
+  let selectOptions;
   const { runtime, output } = createRuntime({
     stdinIsTTY: true,
     stdoutIsTTY: true,
-    prompt: async (message) => {
-      promptMessages.push(message);
-      return message.startsWith('Select package manager') ? '2' : '';
+    selectPackageManager: async (options) => {
+      selectOptions = options;
+      return 'pnpm';
     },
     confirm: async () => true,
     runPostScaffoldSetup: async (options) => {
@@ -101,7 +102,9 @@ test('prompts for package manager in interactive mode when --pm is omitted', asy
   const code = await runCLI(['my-app'], runtime);
 
   assert.equal(code, 0);
-  assert.ok(promptMessages.some((message) => message.startsWith('Select package manager')));
+  assert.equal(selectOptions.message, 'Package manager:');
+  assert.deepEqual(selectOptions.choices, ['npm', 'pnpm', 'yarn', 'bun']);
+  assert.equal(selectOptions.defaultValue, 'npm');
   assert.equal(setupOptions.packageManager, 'pnpm');
   assert.ok(output.some((line) => line.includes('  package manager: pnpm')));
 });

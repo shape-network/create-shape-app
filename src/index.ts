@@ -1,7 +1,8 @@
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
-import readline from 'node:readline/promises';
+import { createInterface } from 'node:readline/promises';
+import { clearScreenDown, cursorTo, emitKeypressEvents, moveCursor } from 'node:readline';
 import { parseArgs, type PackageManager } from './cli/args.js';
 import { CliUsageError } from './cli/errors.js';
 import { HELP_TEXT } from './cli/help.js';
@@ -18,7 +19,6 @@ const require = createRequire(import.meta.url);
 const packageJson = require('../package.json') as { version?: string };
 export const CLI_VERSION = packageJson.version ?? '0.0.0';
 const PACKAGE_MANAGERS: readonly PackageManager[] = ['npm', 'pnpm', 'yarn', 'bun'];
-const PACKAGE_MANAGER_SET = new Set<PackageManager>(PACKAGE_MANAGERS);
 
 interface CliRuntime {
   env: NodeJS.ProcessEnv;
@@ -28,6 +28,7 @@ interface CliRuntime {
   print: (message: string) => void;
   printError: (message: string) => void;
   prompt: (message: string) => Promise<string>;
+  selectPackageManager: (options: PackageManagerSelectOptions) => Promise<PackageManager | undefined>;
   confirm: (message: string) => Promise<boolean>;
   resolveTemplateRelease: (templateRef?: string) => Promise<TemplateRelease>;
   materializeTemplate: (release: TemplateRelease) => Promise<MaterializedTemplate>;
@@ -38,6 +39,13 @@ interface CliRuntime {
 
 const DEFAULT_PROJECT_NAME_PROMPT = 'Project name: ';
 const DEFAULT_CONFIRM_PROMPT = 'Continue? (Y/n): ';
+const PACKAGE_MANAGER_SELECT_MESSAGE = 'Package manager:';
+
+interface PackageManagerSelectOptions {
+  message: string;
+  choices: readonly PackageManager[];
+  defaultValue: PackageManager;
+}
 
 export async function runCLI(argv: string[], runtimeOverrides: Partial<CliRuntime> = {}): Promise<number> {
   const runtime = createRuntime(runtimeOverrides);
@@ -145,6 +153,7 @@ function createRuntime(overrides: Partial<CliRuntime>): CliRuntime {
     print: console.log,
     printError: console.error,
     prompt: defaultPrompt,
+    selectPackageManager: defaultSelectPackageManager,
     confirm: defaultConfirm,
     resolveTemplateRelease: (templateRef) =>
       fetchTemplateRelease({
@@ -187,38 +196,13 @@ async function resolvePackageManager(
     return detectedPackageManager;
   }
 
-  runtime.print('Package manager:');
-  for (const [index, candidate] of PACKAGE_MANAGERS.entries()) {
-    const defaultLabel = candidate === detectedPackageManager ? ' (default)' : '';
-    runtime.print(`  ${index + 1}) ${candidate}${defaultLabel}`);
-  }
-
-  while (true) {
-    const answer = (await runtime.prompt(`Select package manager (1-${PACKAGE_MANAGERS.length}) [${detectedPackageManager}]: `))
-      .trim()
-      .toLowerCase();
-
-    if (!answer) {
-      return detectedPackageManager;
-    }
-
-    const selectedByIndex = Number(answer);
-    if (
-      Number.isInteger(selectedByIndex) &&
-      selectedByIndex >= 1 &&
-      selectedByIndex <= PACKAGE_MANAGERS.length
-    ) {
-      return PACKAGE_MANAGERS[selectedByIndex - 1];
-    }
-
-    if (PACKAGE_MANAGER_SET.has(answer as PackageManager)) {
-      return answer as PackageManager;
-    }
-
-    runtime.printError(
-      `Invalid package manager: ${answer}. Enter 1-${PACKAGE_MANAGERS.length} or one of ${PACKAGE_MANAGERS.join(', ')}.`,
-    );
-  }
+  return (
+    (await runtime.selectPackageManager({
+      message: PACKAGE_MANAGER_SELECT_MESSAGE,
+      choices: PACKAGE_MANAGERS,
+      defaultValue: detectedPackageManager,
+    })) ?? detectedPackageManager
+  );
 }
 
 function isInteractive(runtime: CliRuntime): boolean {
@@ -226,7 +210,7 @@ function isInteractive(runtime: CliRuntime): boolean {
 }
 
 async function defaultPrompt(message: string): Promise<string> {
-  const rl = readline.createInterface({
+  const rl = createInterface({
     input: process.stdin,
     output: process.stdout,
   });
@@ -242,6 +226,109 @@ async function defaultConfirm(message: string): Promise<boolean> {
   const answer = await defaultPrompt(message);
   const normalized = answer.trim().toLowerCase();
   return normalized === '' || normalized === 'y' || normalized === 'yes';
+}
+
+async function defaultSelectPackageManager(options: PackageManagerSelectOptions): Promise<PackageManager | undefined> {
+  const { message, choices, defaultValue } = options;
+  if (choices.length === 0) {
+    return undefined;
+  }
+
+  const defaultIndex = choices.indexOf(defaultValue);
+  let selectedIndex = defaultIndex >= 0 ? defaultIndex : 0;
+
+  if (!process.stdin.isTTY || !process.stdout.isTTY) {
+    return choices[selectedIndex];
+  }
+
+  const stdin = process.stdin;
+  const stdout = process.stdout;
+  const previousRawMode = Boolean(stdin.isRaw);
+  let renderedLines = 0;
+
+  const render = () => {
+    const lines = [
+      message,
+      ...choices.map((candidate, index) => {
+        const indicator = index === selectedIndex ? '>' : ' ';
+        const defaultLabel = candidate === defaultValue ? ' (default)' : '';
+        return ` ${indicator} ${candidate}${defaultLabel}`;
+      }),
+      '  Use Up/Down arrows and Enter to confirm.',
+    ];
+
+    if (renderedLines > 0) {
+      moveCursor(stdout, 0, -renderedLines);
+      cursorTo(stdout, 0);
+      clearScreenDown(stdout);
+    }
+
+    stdout.write(lines.join('\n'));
+    stdout.write('\n');
+    renderedLines = lines.length;
+  };
+
+  emitKeypressEvents(stdin);
+  if (typeof stdin.setRawMode === 'function') {
+    stdin.setRawMode(true);
+  }
+  stdin.resume();
+  stdout.write('\x1b[?25l');
+  render();
+
+  try {
+    const selected = await new Promise<PackageManager>((resolve, reject) => {
+      const onKeypress = (_value: string, key: { ctrl?: boolean; name?: string }) => {
+        if (!key) {
+          return;
+        }
+
+        if (key.ctrl && key.name === 'c') {
+          stdin.off('keypress', onKeypress);
+          reject(new Error('Aborted.'));
+          return;
+        }
+
+        if (key.name === 'up' || key.name === 'k') {
+          selectedIndex = (selectedIndex - 1 + choices.length) % choices.length;
+          render();
+          return;
+        }
+
+        if (key.name === 'down' || key.name === 'j') {
+          selectedIndex = (selectedIndex + 1) % choices.length;
+          render();
+          return;
+        }
+
+        if (key.name === 'return' || key.name === 'enter') {
+          stdin.off('keypress', onKeypress);
+          resolve(choices[selectedIndex]);
+          return;
+        }
+
+        if (key.name === 'escape') {
+          stdin.off('keypress', onKeypress);
+          resolve(defaultValue);
+        }
+      };
+
+      stdin.on('keypress', onKeypress);
+    });
+
+    if (renderedLines > 0) {
+      moveCursor(stdout, 0, -renderedLines);
+      cursorTo(stdout, 0);
+      clearScreenDown(stdout);
+    }
+    stdout.write(`Package manager: ${selected}\n`);
+    return selected;
+  } finally {
+    stdout.write('\x1b[?25h');
+    if (typeof stdin.setRawMode === 'function') {
+      stdin.setRawMode(previousRawMode);
+    }
+  }
 }
 
 function assertValidProjectName(projectName: string): void {
