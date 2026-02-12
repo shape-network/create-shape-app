@@ -39,7 +39,6 @@ export async function materializeTemplateFromRelease(
 async function downloadTarball(url: string, outputPath: string, fetchImpl: typeof fetch): Promise<void> {
   const response = await fetchImpl(url, {
     headers: {
-      Accept: 'application/octet-stream',
       'User-Agent': 'create-shape-app',
     },
   });
