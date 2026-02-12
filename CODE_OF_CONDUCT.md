@@ -7,6 +7,6 @@
 - Avoid harassment, discrimination, or personal attacks.
 
 ## Enforcement
-Report unacceptable behavior to the maintainers via private disclosure in `/Users/wh/code/pattern-engine/create-shape-app/SECURITY.md`.
+Report unacceptable behavior to the maintainers via private disclosure in `SECURITY.md`.
 
 Maintainers may remove comments, reject contributions, or ban users for violations.

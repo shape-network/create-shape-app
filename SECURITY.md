@@ -8,7 +8,7 @@ Please do not open public issues for security reports.
 
 Use one of these private channels:
 - GitHub Security Advisory in this repository
-- Direct email to project maintainers
+- Email: hello@shape.network
 
 Include:
 - affected version
