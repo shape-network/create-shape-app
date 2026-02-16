@@ -89,4 +89,4 @@ bun run test
 Questions or feedback? Reach out! 
 
 - [Discord](http://discord.com/invite/shape-l2)
-- [@williamhzo on X](https://x.com/wiliamhzo)
+- [@williamhzo on X](https://x.com/williamhzo)
