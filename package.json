@@ -1,6 +1,6 @@
 {
   "name": "create-shape-app",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Scaffold Shape Builder Kit projects from pinned release tags.",
   "license": "MIT",
   "repository": {
@@ -11,12 +11,22 @@
     "url": "https://github.com/shape-network/create-shape-app/issues"
   },
   "homepage": "https://github.com/shape-network/create-shape-app#readme",
+  "author": "williamhzo",
   "keywords": [
     "cli",
     "create",
     "scaffold",
     "shape",
-    "builder-kit"
+    "builder-kit",
+    "ethereum",
+    "l2",
+    "web3",
+    "onchain",
+    "nextjs",
+    "hardhat",
+    "wagmi",
+    "viem",
+    "dapp"
   ],
   "publishConfig": {
     "access": "public"
@@ -26,6 +36,7 @@
   "files": [
     "bin",
     "dist",
+    "llms.txt",
     "README.md",
     "LICENSE"
   ],

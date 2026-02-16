@@ -1,0 +1,50 @@
+# create-shape-app
+
+> CLI for scaffolding Shape apps from the Builder Kit template.
+
+Shape is an EVM-compatible L2 built on the OP Stack.
+create-shape-app downloads the latest release of builder-kit and sets up a ready-to-run monorepo.
+
+## Quick Start
+
+- npx create-shape-app my-app
+- bunx create-shape-app my-app
+- pnpm dlx create-shape-app my-app
+- yarn create shape-app my-app
+
+## CLI Options
+
+- -y, --yes: Skip confirmation prompts
+- --pm <bun|npm|pnpm|yarn>: Select package manager
+- --skip-install: Skip dependency install step
+- --skip-git: Skip git init and initial commit
+- --template-ref <tag>: Pin to a specific Builder Kit release tag
+- -h, --help: Show help
+- -v, --version: Show version
+
+## What It Scaffolds
+
+A monorepo with two workspaces:
+
+- apps/web: Next.js frontend with wagmi, viem, RainbowKit, and Tailwind CSS
+- packages/contract: Hardhat project with a sample Solidity contract, deploy scripts, and tests
+
+Pre-configured for Shape mainnet (chain ID 360) and Shape Sepolia (chain ID 11011).
+
+## Behavior
+
+- Downloads from shape-network/builder-kit GitHub release tags only.
+- Rejects non-release refs and canary tags.
+- Copies .env.example to .env when present.
+- Installs dependencies unless --skip-install is set.
+- Initializes git unless --skip-git is set.
+- Requires --yes in non-interactive terminals (CI).
+
+## Links
+
+- Source: https://github.com/shape-network/create-shape-app
+- npm: https://www.npmjs.com/package/create-shape-app
+- Builder Kit: https://github.com/shape-network/builder-kit
+- Shape: https://shape.network
+- Shape docs: https://docs.shape.network
+- Shape Discord: http://discord.com/invite/shape-l2
