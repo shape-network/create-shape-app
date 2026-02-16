@@ -82,11 +82,11 @@ bun run test
 
 - [Shape](https://shape.network)
 - [Shape docs](https://docs.shape.network)
-- [Shape Discord](http://discord.com/invite/shape-l2)
 - [Builder Kit](https://github.com/shape-network/builder-kit)
 
-## Community
+## Support 
 
-- Contribution guide: `CONTRIBUTING.md`
-- Security policy: `SECURITY.md`
-- Code of conduct: `CODE_OF_CONDUCT.md`
+Questions or feedback? Reach out! 
+
+- [Discord](http://discord.com/invite/shape-l2)
+- [@williamhzo on X](https://x.com/wiliamhzo)
